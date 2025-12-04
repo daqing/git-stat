@@ -15,6 +15,7 @@ type DailyStats struct {
 	FilesChanged map[string]struct{}
 	Additions    int
 	Deletions    int
+	CommitCount  int
 }
 
 const (
@@ -25,6 +26,7 @@ const (
 
 const (
 	dateRangeWidth    = 25
+	commitsWidth      = 10
 	filesChangedWidth = 15
 	additionsWidth    = 11
 	deletionsWidth    = 11
@@ -62,6 +64,8 @@ func getGitStats(repoPath string, startDate, endDate time.Time) (map[string]*Dai
 			}
 		}
 
+		dailyStats[commitDate].CommitCount++
+
 		for _, stat := range stats {
 			dailyStats[commitDate].FilesChanged[stat.Name] = struct{}{}
 			dailyStats[commitDate].Additions += stat.Addition
@@ -93,10 +97,11 @@ func formatDateRange(startDate, endDate time.Time) string {
 }
 
 func printTableHeader() {
-	totalWidth := dateRangeWidth + filesChangedWidth + additionsWidth + deletionsWidth + totalChangesWidth + 4 // +4 for separators
+	totalWidth := dateRangeWidth + commitsWidth + filesChangedWidth + additionsWidth + deletionsWidth + totalChangesWidth + 5 // +5 for separators
 
-	fmt.Printf("%s|%s|%s|%s|%s\n",
+	fmt.Printf("%s|%s|%s|%s|%s|%s\n",
 		centerText("Date Range", dateRangeWidth),
+		centerText("Commits", commitsWidth),
 		centerText("Files Changed", filesChangedWidth),
 		centerText("Additions", additionsWidth),
 		centerText("Deletions", deletionsWidth),
@@ -105,15 +110,16 @@ func printTableHeader() {
 	fmt.Printf("%s\n", strings.Repeat("-", totalWidth))
 }
 
-func printTableRow(dateRange string, filesChanged, additions, deletions, totalChanges int) {
-	fmt.Printf("%s|%s|%s|%s|%s\n",
+func printTableRow(dateRange string, commitCount, filesChanged, additions, deletions, totalChanges int) {
+	fmt.Printf("%s|%s|%s|%s|%s|%s\n",
 		padText(dateRange, dateRangeWidth),
+		centerText(fmt.Sprintf("%d", commitCount), commitsWidth),
 		centerText(fmt.Sprintf("%d", filesChanged), filesChangedWidth),
 		centerText(fmt.Sprintf("%d", additions), additionsWidth),
 		centerText(fmt.Sprintf("%d", deletions), deletionsWidth),
 		centerText(fmt.Sprintf("%d", totalChanges), totalChangesWidth))
 
-	totalWidth := dateRangeWidth + filesChangedWidth + additionsWidth + deletionsWidth + totalChangesWidth + 4
+	totalWidth := dateRangeWidth + commitsWidth + filesChangedWidth + additionsWidth + deletionsWidth + totalChangesWidth + 5
 	fmt.Printf("%s\n", strings.Repeat("-", totalWidth))
 }
 
@@ -125,7 +131,7 @@ func printNoChangeRow(dateRange string, days int) {
 
 	message := fmt.Sprintf("%d %s no commits", days, days_tip)
 
-	totalWidth := dateRangeWidth + filesChangedWidth + additionsWidth + deletionsWidth + totalChangesWidth + 4 // +4 for separators
+	totalWidth := dateRangeWidth + commitsWidth + filesChangedWidth + additionsWidth + deletionsWidth + totalChangesWidth + 5 // +5 for separators
 
 	fmt.Printf("%s%s%s\n", colorOrange, strings.Repeat("-", totalWidth), colorReset)
 
@@ -216,7 +222,7 @@ func main() {
 				noChangeDays = 0
 			}
 			totalChanges := stats.Additions + stats.Deletions
-			printTableRow(dateStr, len(stats.FilesChanged), stats.Additions, stats.Deletions, totalChanges)
+			printTableRow(dateStr, stats.CommitCount, len(stats.FilesChanged), stats.Additions, stats.Deletions, totalChanges)
 		}
 	}
 
